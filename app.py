@@ -65,7 +65,7 @@ for block in blocks:
 	text = predict(block)
 	if text != None or text != "":
 		board[h_index][w_index] = preprocess_text(text)
-	print("text @({},{}) is {}".format(h_index,w_index,text))
+	# print("text @({},{}) is {}".format(h_index,w_index,text))
 	count = count + 1
 	h_index = int(count/9)
 	w_index = count % 9

@@ -1,9 +1,6 @@
 import cv2
 import numpy as np
-import pytesseract
-from predict_digit import *
-
-pytesseract.pytesseract.tesseract_cmd = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+from predict_digit import predict,predict_with_image_output
 
 def preprocess_text(text):
 	string = str(text)
@@ -24,54 +21,35 @@ def print_board(board):
 		print(print_str)
 
 
-img = cv2.imread("sample_image.png")
-resized_img = cv2.resize(img,(300,300))
-(width,height,depth) = resized_img.shape
+def predict_board(img):
+	blocks = []
 
-block1 = resized_img[ 0: int(height/3) , 0 : int(width/3)]
-gray_block = cv2.cvtColor(block1, cv2.COLOR_BGR2GRAY)
-gray = cv2.medianBlur(gray_block, 1)
+	for h_index in range(0,9):
+		for w_index in range(0,9):
+			blocks.append(img[int(h_index * height/9): int( (h_index+1) * height/9) ,
+									 int(w_index * width/9) : int((w_index+1) * width/9)])
 
-
-blocks = []
-
-for h_index in range(0,9):
-	for w_index in range(0,9):
-		blocks.append(resized_img[int(h_index * height/9): int( (h_index+1) * height/9) ,
-								 int(w_index * width/9) : int((w_index+1) * width/9)])
-
-board = np.full([9,9], None)
-h_index=0
-w_index=0
-count = 0
-for block in blocks:
-	text = pytesseract.image_to_string(block, config="--psm 8")
-	if text != None or text != "":
-		board[h_index][w_index] = preprocess_text(text)
-	# print("text @({},{}) is {}".format(h_index,w_index,text))
-	count = count + 1
-	h_index = int(count/9)
-	w_index = count % 9
+	board = np.full([9,9], None)
+	h_index=0
+	w_index=0
+	count = 0
+	for block in blocks:
+		text = predict(block)
+		if text != None or text != "":
+			board[h_index][w_index] = preprocess_text(text)
+		# print("text @({},{}) is {}".format(h_index,w_index,text))
+		count = count + 1
+		h_index = int(count/9)
+		w_index = count % 9
 
 
-print_board(board)
+	print_board(board)
 
+def predict_block(img):
+	# inv_img = cv2.threshold(img, 10, 255, cv2.THRESH_BINARY_INV)
+	text = predict(img)
+	print(text)
 
-board = np.full([9,9], None)
-h_index=0
-w_index=0
-count = 0
-for block in blocks:
-	text = predict(block)
-	if text != None or text != "":
-		board[h_index][w_index] = preprocess_text(text)
-	print("text @({},{}) is {}".format(h_index,w_index,text))
-	count = count + 1
-	h_index = int(count/9)
-	w_index = count % 9
-
-
-print_board(board)
 
 # block1 = cv2.threshold(gray_block, 10, 255, cv2.THRESH_BINARY_INV)[1]
 # block2 = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)[1]
@@ -109,3 +87,15 @@ print_board(board)
 # print(preprocess_text(text))
 
 
+if __name__ == '__main__':
+	img = cv2.imread("01.png")
+	resized_img = cv2.resize(img,(28,28))
+	(width,height,depth) = resized_img.shape
+	resized_img = cv2.medianBlur(resized_img, 1)
+	gray = cv2.cvtColor(resized_img, cv2.COLOR_BGR2GRAY)
+	inv_img = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)[1]
+	inv_img = inv_img.reshape(28,28,1)
+	cv2.imshow('inv_img',inv_img)
+	cv2.waitKey(0)
+	print('***********************Predicted ')
+	predict(inv_img)
