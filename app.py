@@ -40,23 +40,26 @@ for h_index in range(0,9):
 		blocks.append(resized_img[int(h_index * height/9): int( (h_index+1) * height/9) ,
 								 int(w_index * width/9) : int((w_index+1) * width/9)])
 
-board = np.full([9,9], None)
-h_index=0
-w_index=0
-count = 0
-for block in blocks:
-	text = pytesseract.image_to_string(block, config="--psm 8")
-	if text != None or text != "":
-		board[h_index][w_index] = preprocess_text(text)
-	# print("text @({},{}) is {}".format(h_index,w_index,text))
-	count = count + 1
-	h_index = int(count/9)
-	w_index = count % 9
 
 
-print_board(board)
+# print("####################################################Prediction using Tesseract-OCR ############################")
+# board = np.full([9,9], None)
+# h_index=0
+# w_index=0
+# count = 0
+# for block in blocks:
+# 	text = pytesseract.image_to_string(block, config="--psm 8")
+# 	if text != None or text != "":
+# 		board[h_index][w_index] = preprocess_text(text)
+# 	# print("text @({},{}) is {}".format(h_index,w_index,text))
+# 	count = count + 1
+# 	h_index = int(count/9)
+# 	w_index = count % 9
 
 
+# print_board(board)
+
+print("####################################################Prediction using my model############################")
 board = np.full([9,9], None)
 h_index=0
 w_index=0
