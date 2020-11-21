@@ -40,26 +40,7 @@ for h_index in range(0,9):
 		blocks.append(resized_img[int(h_index * height/9): int( (h_index+1) * height/9) ,
 								 int(w_index * width/9) : int((w_index+1) * width/9)])
 
-
-
-# print("####################################################Prediction using Tesseract-OCR ############################")
-# board = np.full([9,9], None)
-# h_index=0
-# w_index=0
-# count = 0
-# for block in blocks:
-# 	text = pytesseract.image_to_string(block, config="--psm 8")
-# 	if text != None or text != "":
-# 		board[h_index][w_index] = preprocess_text(text)
-# 	# print("text @({},{}) is {}".format(h_index,w_index,text))
-# 	count = count + 1
-# 	h_index = int(count/9)
-# 	w_index = count % 9
-
-
-# print_board(board)
-
-print("####################################################Prediction using my model############################")
+print("#################################################### Prediction using my model ############################")
 board = np.full([9,9], None)
 h_index=0
 w_index=0
@@ -75,40 +56,5 @@ for block in blocks:
 
 
 print_board(board)
-
-# block1 = cv2.threshold(gray_block, 10, 255, cv2.THRESH_BINARY_INV)[1]
-# block2 = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)[1]
-# cv2.imshow("Image",np.hstack((block1,block2)))
-# cv2.waitKey(0)
-
-# cv2.imshow("Image",blocks[68])
-# cv2.waitKey(0)
-# text = pytesseract.image_to_string(blocks[68], config="--psm 8")
-# print(preprocess_text(text))
-
-# for i in range(0,81):
-# 	cv2.imshow("Image",blocks[i][4:-4,4:-4])
-# 	cv2.waitKey(500)
-
-# gray = gray_block[2:int(height/9)-1,2:int(width/9)]
-
-# cv2.imshow("Image",gray)
-# cv2.waitKey(0)
-# text = pytesseract.image_to_string(gray)
-# print(text)
-
-
-# new_img = cv2.imread("sample_image.png")
-# text = pytesseract.image_to_string(gray_block, config="--psm 1")
-# print(text)
-
-
-# new_img = cv2.imread("01.png")
-# text = pytesseract.image_to_string(new_img, config="--psm 8")
-# print(text)
-
-# gray_img = cv2.threshold(new_img, 100, 255, cv2.THRESH_BINARY_INV)[1]
-# text = pytesseract.image_to_string(gray_img, config="--psm 8")
-# print(preprocess_text(text))
 
 
