@@ -54,7 +54,7 @@ def predict(img):
 	prediction = model.predict(resized_img)
 	prediction[0][0] = 0 # to remove the possibility to have a '0' prediction
 	output = np.argmax(prediction)
-	print(output)
+	#print(output)
 	return output
 
 

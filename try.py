@@ -53,8 +53,8 @@ def remove_lines(img):
 	vertical_img = cv2.dilate(vertical_img, kernel, iterations=1)
 
 	no_border = np.bitwise_or(255 - new_img, horizontal_img + vertical_img)
-	cv2.imshow("Processed",no_border)
-	cv2.waitKey(0)
+	# cv2.imshow("Processed",no_border)
+	# cv2.waitKey(0)
 	return no_border
 
 def detect_blank(inv_img):
