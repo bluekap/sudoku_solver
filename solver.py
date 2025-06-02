@@ -1,72 +1,137 @@
+def is_valid_move(board, row, col, num):
+    """
+    Check if placing 'num' at position (row, col) is valid
+    """
+    # Check row
+    for j in range(9):
+        if board[row][j] == num:
+            return False
+
+    # Check column
+    for i in range(9):
+        if board[i][col] == num:
+            return False
+
+    # Check 3x3 box
+    box_row = (row // 3) * 3
+    box_col = (col // 3) * 3
+
+    for i in range(box_row, box_row + 3):
+        for j in range(box_col, box_col + 3):
+            if board[i][j] == num:
+                return False
+
+    return True
+
+
+def find_empty_cell(board):
+    """
+    Find the next empty cell (returns row, col or None if board is full)
+    """
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] == 0:
+                return i, j
+    return None
+
+
+def solve_sudoku(board):
+    """
+    Solve Sudoku using backtracking algorithm
+    Returns True if solved, False if unsolvable
+    """
+    empty_cell = find_empty_cell(board)
+
+    if not empty_cell:
+        return True  # Board is complete
+
+    row, col = empty_cell
+
+    for num in range(1, 10):
+        if is_valid_move(board, row, col, num):
+            board[row][col] = num
+
+            if solve_sudoku(board):
+                return True
+
+            # Backtrack
+            board[row][col] = 0
+
+    return False
+
+
+def is_valid_sudoku(board):
+    """
+    Check if the current board state is valid (no conflicts)
+    """
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] != 0:
+                # Temporarily remove the number to check validity
+                num = board[i][j]
+                board[i][j] = 0
+
+                if not is_valid_move(board, i, j, num):
+                    board[i][j] = num  # Restore the number
+                    return False
+
+                board[i][j] = num  # Restore the number
+
+    return True
+
+
 def print_board(board):
-	for blocks in board:
-		print('_'*63)
-		print_str = ""
-		for block in blocks:
-			if block == "":
-				print_str = print_str + "|     |"
-			else:
-				print_str = print_str  + ("|  {}  |".format(block))
-		print(print_str)
+    """
+    Pretty print the Sudoku board
+    """
+    for i in range(9):
+        if i % 3 == 0 and i != 0:
+            print("------+-------+------")
 
-def check(x,y,board):
-	num = board[y][x]
-	
-	# Check rows and columns
-	for i in range(9):
-		if (board[y][i] == num) and x!=i:
-			return False
-		if (board[i][x] == num) and y!=i:
-			return False
+        for j in range(9):
+            if j % 3 == 0 and j != 0:
+                print("| ", end="")
 
-	x_block = int(x/3)
-	y_block = int(y/3)
+            if board[i][j] == 0:
+                print(". ", end="")
+            else:
+                print(str(board[i][j]) + " ", end="")
 
-	for m in range(3):
-		for n in range(3):
-			if (board[y_block*3 + m][x_block*3 + n] == num) and x!=(x_block*3 + n):
-				return False
-	return True
-
-def solve(board):
-	def backtrack(x,y):
-		#print("Solving {},{}".format(x,y))
-		if x == 9 and y == 8 :
-			return True
-
-		if x == 9:
-			y = y + 1
-			x = 0
-
-		if board[y][x] != "":
-			return backtrack(x+1,y)
-
-		for i in range(1,10):
-			board[y][x] = i
-			if check(x,y,board):
-				if(backtrack(x+1,y)):
-					return True
-			board[y][x] = ""					
-		return False
-	return backtrack(0,0)
+        print()
 
 
+def count_empty_cells(board):
+    """
+    Count the number of empty cells in the board
+    """
+    count = 0
+    for i in range(9):
+        for j in range(9):
+            if board[i][j] == 0:
+                count += 1
+    return count
 
-if __name__ == "__main__":
 
-	board = [
-			[3, 0, 6, 5, 0, 8, 4, 0, 0],
-			[5, 2, 0, 0, 0, 0, 0, 0, 0], 
-	        [0, 8, 7, 0, 0, 0, 0, 3, 1], 
-	        [0, 0, 3, 0, 1, 0, 0, 8, 0], 
-	        [9, 0, 0, 8, 6, 3, 0, 0, 5], 
-	        [0, 5, 0, 0, 9, 0, 6, 0, 0], 
-	        [1, 3, 0, 0, 0, 0, 2, 5, 0], 
-	        [0, 0, 0, 0, 0, 0, 0, 7, 4], 
-	        [0, 0, 5, 2, 0, 6, 3, 0, 0]
-	        ]	
+def get_board_difficulty(board):
+    """
+    Estimate difficulty based on number of empty cells
+    """
+    empty_cells = count_empty_cells(board)
 
-	if(solve(board)):
-		print_board(board)
-	else:
-		print("No solution possible.")
+    if empty_cells <= 30:
+        return "Easy"
+    elif empty_cells <= 45:
+        return "Medium"
+    elif empty_cells <= 55:
+        return "Hard"
+    else:
+        return "Expert"
+
+
+def copy_board(board):
+    """
+    Create a deep copy of the board
+    """
+    return [row[:] for row in board]
+
+print("Solver Script loaded successfully")
