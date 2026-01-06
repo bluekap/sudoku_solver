@@ -52,110 +52,92 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    """Handle file upload and process Sudoku"""
-
-    # Check if file was uploaded
+@app.route('/extract', methods=['POST'])
+def extract_sudoku():
+    """Handle file upload and extract Sudoku grid (Step 1)"""
     if 'file' not in request.files:
         return jsonify({'success': False, 'error': 'No file uploaded'})
 
     file = request.files['file']
-
-    # Check if file was selected
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No file selected'})
 
-    # Check file type
     if not allowed_file(file.filename):
-        return jsonify({'success': False, 'error': 'Invalid file type. Please upload an image file.'})
+        return jsonify({'success': False, 'error': 'Invalid file type'})
 
     try:
-        # Save uploaded file
+        # Save file
         filename = secure_filename(file.filename)
         timestamp = str(int(time.time()))
         filename = f"{timestamp}_{filename}"
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        # Convert image to base64 for display
+        # Get base64 for display
         original_image_b64 = image_to_base64(file_path)
-        if not original_image_b64:
-            return jsonify({'success': False, 'error': 'Failed to process uploaded image'})
-
-        # Initialize processing steps
-        processing_steps = []
-
-        # Extract Sudoku from image
-        processing_steps.append("Image uploaded and preprocessed")
+        
+        # Extract Sudoku
         board = extract_sudoku_from_image(file_path)
 
-        if board is None:
-            # Clean up uploaded file
-            try:
-                os.remove(file_path)
-            except:
-                pass
-            return jsonify({
-                'success': False,
-                'error': 'Could not detect Sudoku grid in the image. Please ensure the image contains a clear Sudoku puzzle.'
-            })
-
-        processing_steps.append("Sudoku grid detected and extracted")
-        processing_steps.append("Individual cells processed with OCR")
-
-        # Validate the extracted board
-        if not is_valid_sudoku(board):
-            processing_steps.append("⚠️ Warning: Detected conflicts in extracted puzzle")
-
-        # Create a copy for solving
-        original_board = copy_board(board)
-        solution_board = copy_board(board)
-
-        # Solve the Sudoku
-        processing_steps.append("Applying solving algorithm...")
-        solved = solve_sudoku(solution_board)
-
-        if not solved:
-            processing_steps.append("❌ Could not solve puzzle (may contain errors)")
-            return jsonify({
-                'success': False,
-                'error': 'Could not solve the Sudoku puzzle. This might be due to OCR errors or an invalid puzzle.',
-                'original_image': f"data:image/jpeg;base64,{original_image_b64}",
-                'original_board': original_board,
-                'processing_steps': processing_steps
-            })
-
-        processing_steps.append("✅ Puzzle solved successfully!")
-
-        # Clean up uploaded file
+        # Clean up
         try:
             os.remove(file_path)
         except:
             pass
 
-        # Return successful result
+        if board is None:
+            return jsonify({
+                'success': False, 
+                'error': 'Could not detect Sudoku grid',
+                'original_image': f"data:image/jpeg;base64,{original_image_b64}" if original_image_b64 else None
+            })
+
         return jsonify({
             'success': True,
             'original_image': f"data:image/jpeg;base64,{original_image_b64}",
-            'original_board': original_board,
-            'solved_board': solution_board,
-            'processing_steps': processing_steps
+            'original_board': board
         })
 
     except Exception as e:
-        # Clean up uploaded file in case of error
-        try:
-            if 'file_path' in locals():
-                os.remove(file_path)
-        except:
-            pass
+        return jsonify({'success': False, 'error': str(e)})
 
-        print(f"Error processing Sudoku: {str(e)}")
+
+@app.route('/solve', methods=['POST'])
+def solve_sudoku_api():
+    """Solve the Sudoku grid (Step 2)"""
+    try:
+        data = request.json
+        original_board = data.get('board')
+
+        if not original_board:
+            return jsonify({'success': False, 'error': 'No board data provided'})
+
+        # Validate
+        if not is_valid_sudoku(original_board):
+            return jsonify({
+                'success': False, 
+                'error': 'Invalid Sudoku board detected',
+                'is_valid': False
+            })
+
+        # Solve
+        solution_board = copy_board(original_board)
+        solved = solve_sudoku(solution_board)
+
+        if not solved:
+            return jsonify({
+                'success': False, 
+                'error': 'Could not solve puzzle',
+                'solved_board': None
+            })
+
         return jsonify({
-            'success': False,
-            'error': f'An error occurred while processing the image: {str(e)}'
+            'success': True,
+            'solved_board': solution_board
         })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.errorhandler(413)
