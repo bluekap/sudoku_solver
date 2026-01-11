@@ -393,3 +393,463 @@ h1 {
         max-width: 280px;
     }
 }
+
+/* Navigation Bar */
+.nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+}
+
+.nav-brand {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    padding-top: 80px;
+}
+
+/* Techniques Page Styles */
+.techniques-hero {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.techniques-hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.techniques-hero p {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.quick-nav {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-nav h3 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-heading);
+}
+
+
+/* Technique Card Styles */
+.technique-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.technique-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-color);
+}
+
+.technique-card .card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.technique-card .tech-emoji {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.technique-card:hover .tech-emoji {
+    transform: scale(1.2) rotate(5deg);
+}
+
+.technique-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.technique-card .card-preview {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.technique-card.active {
+    border-color: var(--success-color);
+    background: rgba(0, 184, 148, 0.15);
+    box-shadow: 0 0 20px rgba(0, 184, 148, 0.4);
+}
+
+.technique-card.active .tech-emoji {
+    transform: scale(1.1);
+}
+
+.nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.nav-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.nav-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+}
+
+.nav-card-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.nav-card-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.difficulty-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.difficulty-beginner {
+    background: rgba(0, 184, 148, 0.2);
+    color: #55efc4;
+}
+
+.difficulty-intermediate {
+    background: rgba(255, 184, 0, 0.2);
+    color: #ffd93d;
+}
+
+.difficulty-advanced {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+}
+
+.difficulty-expert {
+    background: rgba(186, 85, 211, 0.2);
+    color: #ba55d3;
+}
+
+.technique-section {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.technique-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.technique-number {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.technique-title {
+    flex: 1;
+}
+
+.technique-title h2 {
+    font-family: var(--font-heading);
+    margin-bottom: 0.25rem;
+}
+
+.technique-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.technique-description {
+    color: var(--text-secondary);
+    line-height: 1.8;
+}
+
+.technique-description p {
+    margin-bottom: 1rem;
+}
+
+.technique-description ul {
+    margin-left: 1.5rem;
+    margin-top: 1rem;
+}
+
+.technique-description li {
+    margin-bottom: 0.5rem;
+}
+
+.technique-example {
+    text-align: center;
+}
+
+.example-grid {
+    display: inline-block;
+    background: white;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.example-caption {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .nav-bar {
+        padding: 1rem;
+    }
+
+    .nav-brand {
+        font-size: 1.2rem;
+    }
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .techniques-hero h1 {
+        font-size: 2rem;
+    }
+
+    .techniques-hero p {
+        font-size: 1rem;
+    }
+
+    .technique-content {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: 2rem;
+    margin-top: 3rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.footer-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
+/* --- Interactive Techniques Styles --- */
+
+.interactive-svg {
+    overflow: visible;
+    cursor: help;
+}
+
+/* Base Styles for Technique Elements */
+.pulse-circle {
+    transform-origin: center;
+    animation: simple-pulse 2s infinite ease-in-out;
+}
+
+.fade-circle {
+    opacity: 0.6;
+    animation: fade-pulse 2s infinite alternate;
+}
+
+.scan-line,
+.vert-scan-line {
+    opacity: 0.6;
+    animation: dash-draw 2s infinite ease-in-out alternate;
+}
+
+.delay-1 {
+    animation-delay: 0.5s;
+}
+
+.delay-2 {
+    animation-delay: 1.0s;
+}
+
+/* Interactive Hover States */
+.interactive-svg:hover .pulse-circle,
+.interactive-svg:hover .fade-circle,
+.interactive-svg:hover .scan-line {
+    animation-play-state: paused;
+    opacity: 1;
+    stroke: var(--accent-color);
+    stroke-width: 3px;
+}
+
+.technique-card.active {
+    border-color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(var(--primary-hue), 0.3);
+}
+
+/* Animations */
+@keyframes simple-pulse {
+    0% {
+        transform: scale(1);
+        stroke-width: 2px;
+    }
+
+    50% {
+        transform: scale(1.2);
+        stroke-width: 3px;
+    }
+
+    100% {
+        transform: scale(1);
+        stroke-width: 2px;
+    }
+}
+
+@keyframes fade-pulse {
+    0% {
+        opacity: 0.3;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes dash-draw {
+    0% {
+        stroke-dashoffset: 20;
+        opacity: 0.4;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+}
+
+.highlight-area {
+    animation: area-flash 3s infinite;
+}
+
+@keyframes area-flash {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}

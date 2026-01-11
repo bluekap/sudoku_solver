@@ -52,6 +52,12 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/techniques')
+def techniques():
+    """Serve the techniques learning page"""
+    return render_template('techniques.html')
+
+
 @app.route('/extract', methods=['POST'])
 def extract_sudoku():
     """Handle file upload and extract Sudoku grid (Step 1)"""

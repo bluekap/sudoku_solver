@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Techniques - Snap Sudoku Solver</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <nav class="nav-bar">
+        <div class="nav-brand">📸 Snap Sudoku Solver</div>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/techniques" class="nav-link active">Techniques</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="techniques-hero">
+            <h1>Sudoku Solving Techniques</h1>
+            <p>Master these essential strategies to solve any Sudoku puzzle by hand. From beginner basics to advanced
+                techniques.</p>
+        </div>
+
+        <div class="level-section">
+            <div class="level-header">
+                <span class="level-icon">🌱</span>
+                <h2>Beginner</h2>
+                <span class="difficulty-badge difficulty-beginner">Start Here</span>
+            </div>
+            <div class="nav-grid">
+                <div class="technique-card" onclick="toggleTechnique('tech-naked-single')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🎯</span>
+                        <h3>Naked Single</h3>
+                    </div>
+                    <p class="card-preview">When a cell has only one possible number</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-hidden-single')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🔍</span>
+                        <h3>Hidden Single</h3>
+                    </div>
+                    <p class="card-preview">A number that can only fit in one spot</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-full-house')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🏠</span>
+                        <h3>Full House</h3>
+                    </div>
+                    <p class="card-preview">Fill the final empty cell in a group</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="level-section">
+            <div class="level-header">
+                <span class="level-icon">⚡</span>
+                <h2>Level Up</h2>
+                <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+            </div>
+            <div class="nav-grid">
+                <div class="technique-card" onclick="toggleTechnique('tech-naked-pair')">
+                    <div class="card-header">
+                        <span class="tech-emoji">👥</span>
+                        <h3>Naked Pair</h3>
+                    </div>
+                    <p class="card-preview">Two cells sharing two numbers</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-pointing-pair')">
+                    <div class="card-header">
+                        <span class="tech-emoji">👉</span>
+                        <h3>Pointing Pair</h3>
+                    </div>
+                    <p class="card-preview">Numbers pointing to a specific line</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-box-line')">
+                    <div class="card-header">
+                        <span class="tech-emoji">📦</span>
+                        <h3>Box/Line Reduction</h3>
+                    </div>
+                    <p class="card-preview">Line candidate locked in a box</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="level-section">
+            <div class="level-header">
+                <span class="level-icon">🔥</span>
+                <h2>Pro Moves</h2>
+                <span class="difficulty-badge difficulty-advanced">Advanced</span>
+            </div>
+            <div class="nav-grid">
+                <div class="technique-card" onclick="toggleTechnique('tech-naked-triple')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🎭</span>
+                        <h3>Naked Triple</h3>
+                    </div>
+                    <p class="card-preview">Three cells, three numbers</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-x-wing')">
+                    <div class="card-header">
+                        <span class="tech-emoji">❌</span>
+                        <h3>X-Wing</h3>
+                    </div>
+                    <p class="card-preview">Rectangle elimination technique</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="level-section">
+            <div class="level-header">
+                <span class="level-icon">💎</span>
+                <h2>Master Class</h2>
+                <span class="difficulty-badge difficulty-expert">Expert</span>
+            </div>
+            <div class="nav-grid">
+                <div class="technique-card" onclick="toggleTechnique('tech-swordfish')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🐟</span>
+                        <h3>Swordfish</h3>
+                    </div>
+                    <p class="card-preview">3x3 Grid pattern elimination</p>
+                </div>
+                <div class="technique-card" onclick="toggleTechnique('tech-xy-wing')">
+                    <div class="card-header">
+                        <span class="tech-emoji">🦅</span>
+                        <h3>XY-Wing</h3>
+                    </div>
+                    <p class="card-preview">Pivot and pincers elimination</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expandable Details -->
+        <div id="tech-naked-single" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">1</div>
+                <div class="technique-title">
+                    <h2>Naked Single</h2>
+                    <span class="difficulty-badge difficulty-beginner">Beginner</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>A cell where only one number is possible. This is the most basic Sudoku technique.</p>
+                    <p><strong>Your Strategy:</strong></p>
+                    <ul>
+                        <li>🔎 Scan each empty cell systematically</li>
+                        <li>✅ Cross off numbers already in the same row, column, and box</li>
+                        <li>💡 When only one number remains, you've found it!</li>
+                    </ul>
+                    <p><strong>Pro Tip:</strong> Start with cells that have the most neighbors filled in - they're
+                        easier to solve.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <defs>
+                                <pattern id="grid" width="31.11" height="31.11" patternUnits="userSpaceOnUse">
+                                    <path d="M 31.11 0 L 0 0 0 31.11" fill="none" stroke="#ddd" stroke-width="1" />
+                                </pattern>
+                            </defs>
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Box 1 filled except R2C2 -->
+                            <text x="15.5" y="23" text-anchor="middle" font-size="18" fill="#333">1</text>
+                            <text x="46.6" y="23" text-anchor="middle" font-size="18" fill="#333">2</text>
+                            <text x="77.7" y="23" text-anchor="middle" font-size="18" fill="#333">3</text>
+                            <text x="15.5" y="54" text-anchor="middle" font-size="18" fill="#333">4</text>
+                            <!-- R2C2 Empty (Target) -->
+                            <text x="77.7" y="54" text-anchor="middle" font-size="18" fill="#333">6</text>
+                            <text x="15.5" y="85" text-anchor="middle" font-size="18" fill="#333">7</text>
+                            <text x="46.6" y="85" text-anchor="middle" font-size="18" fill="#333">8</text>
+                            <text x="77.7" y="85" text-anchor="middle" font-size="18" fill="#333">9</text>
+
+                            <g class="solved-group">
+                                <title>Calculated: 5 is the sole candidate!</title>
+                                <text x="46.6" y="54" text-anchor="middle" font-size="18" font-weight="bold"
+                                    fill="#00b894">5</text>
+                                <circle class="pulse-circle" cx="46.6" cy="46.6" r="14" fill="none" stroke="#00b894"
+                                    stroke-width="2" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">In this box, only 5 is missing from the sequence 1-9</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 2: Hidden Single -->
+        <div id="tech-hidden-single" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">2</div>
+                <div class="technique-title">
+                    <h2>Hidden Single</h2>
+                    <span class="difficulty-badge difficulty-beginner">⭐ Easy</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>A number that can only go in one place within a row, column, or box, even if that cell has
+                        multiple candidates.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Pick a number (e.g., 5)</li>
+                        <li>Look at a row, column, or 3×3 box</li>
+                        <li>If that number can only fit in one cell, place it there</li>
+                    </ul>
+                    <p><strong>Example:</strong> If 1 can only go in one cell of a box (blocked elsewhere), it must
+                        be 1.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Existing Numbers -->
+                            <text x="15.5" y="23" text-anchor="middle" font-size="18" fill="#333">2</text>
+                            <text x="77.7" y="23" text-anchor="middle" font-size="18" fill="#333">5</text>
+                            <text x="15.5" y="54" text-anchor="middle" font-size="18" fill="#333">8</text>
+                            <!-- R2C2 is target for 1 -->
+                            <text x="77.7" y="54" text-anchor="middle" font-size="11" fill="#777">1,9</text>
+                            <text x="46.6" y="85" text-anchor="middle" font-size="18" fill="#333">3</text>
+
+                            <!-- Blockers -->
+                            <text x="46.6" y="140" text-anchor="middle" font-size="18" fill="#d63031">1</text>
+                            <line x1="46.6" y1="140" x2="46.6" y2="0" stroke="#d63031" stroke-width="2"
+                                stroke-dasharray="5,5" class="scan-line" />
+
+                            <text x="200" y="23" text-anchor="middle" font-size="18" fill="#d63031">1</text>
+                            <line x1="200" y1="23" x2="0" y2="23" stroke="#d63031" stroke-width="2"
+                                stroke-dasharray="5,5" class="scan-line delay-1" />
+
+                            <g class="solved-group">
+                                <title>Hidden Single: 1 cannot go in col 2 or row 1 within this box!</title>
+                                <text x="46.6" y="54" text-anchor="middle" font-size="18" font-weight="bold"
+                                    fill="#00b894">1</text>
+                                <circle class="pulse-circle" cx="46.6" cy="46.6" r="14" fill="none" stroke="#00b894"
+                                    stroke-width="2" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">1 is blocked from other cells, must go here</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 3: Full House -->
+        <div id="tech-full-house" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">3</div>
+                <div class="technique-title">
+                    <h2>Full House</h2>
+                    <span class="difficulty-badge difficulty-beginner">⭐ Easy</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p><strong>The Easy Win:</strong> When a region is almost complete with just one empty cell, the
+                        missing number is obvious.</p>
+                    <p><strong>Your Strategy:</strong></p>
+                    <ul>
+                        <li>👀 Look for nearly complete rows, columns, or boxes</li>
+                        <li>🧮 Add up the numbers 1-9 and find what's missing</li>
+                        <li>🎉 Fill in the last number - instant satisfaction!</li>
+                    </ul>
+                    <p><strong>Pro Tip:</strong> This often happens near the end of a puzzle, creating a satisfying
+                        cascade of solutions.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Row 1 filled except R1C5 (center of row 1) -->
+                            <text x="15.5" y="23" text-anchor="middle" font-size="18" fill="#333">1</text>
+                            <text x="46.6" y="23" text-anchor="middle" font-size="18" fill="#333">2</text>
+                            <text x="77.7" y="23" text-anchor="middle" font-size="18" fill="#333">3</text>
+                            <text x="108.8" y="23" text-anchor="middle" font-size="18" fill="#333">4</text>
+                            <!-- Missing 5 -->
+                            <text x="171" y="23" text-anchor="middle" font-size="18" fill="#333">6</text>
+                            <text x="202.1" y="23" text-anchor="middle" font-size="18" fill="#333">7</text>
+                            <text x="233.2" y="23" text-anchor="middle" font-size="18" fill="#333">8</text>
+                            <text x="264.3" y="23" text-anchor="middle" font-size="18" fill="#333">9</text>
+
+                            <g class="solved-group">
+                                <title>Full House: Only 5 is missing!</title>
+                                <text x="140" y="23" text-anchor="middle" font-size="18" font-weight="bold"
+                                    fill="#00b894">5</text>
+                                <circle class="pulse-circle" cx="140" cy="15.5" r="14" fill="none" stroke="#00b894"
+                                    stroke-width="2" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">Only 5 is missing from this row</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 4: Naked Pairs -->
+        <div id="tech-naked-pair" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">4</div>
+                <div class="technique-title">
+                    <h2>Naked Pair</h2>
+                    <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>When two cells in a row, column, or box can only contain the same two numbers, those numbers
+                        can
+                        be eliminated from other cells.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find two cells with only the same two candidates (e.g., both can only be 3 or 7)</li>
+                        <li>Remove those two numbers from all other cells in that row/column/box</li>
+                        <li>This often reveals hidden singles or naked singles</li>
+                    </ul>
+                    <p><strong>Example:</strong> If two cells can only be {3,7}, no other cell in that unit can be 3
+                        or
+                        7.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Naked Pair in R1C1 and R1C3: {3,7} -->
+                            <text x="15.5" y="20" text-anchor="middle" font-size="11" fill="#6c5ce7">37</text>
+                            <text x="77.7" y="20" text-anchor="middle" font-size="11" fill="#6c5ce7">37</text>
+
+                            <!-- Filled numbers in Row 1 -->
+                            <text x="108.8" y="23" text-anchor="middle" font-size="18" fill="#333">1</text>
+                            <text x="140" y="23" text-anchor="middle" font-size="18" fill="#333">5</text>
+                            <text x="171" y="23" text-anchor="middle" font-size="18" fill="#333">9</text>
+                            <text x="233.2" y="23" text-anchor="middle" font-size="18" fill="#333">2</text>
+
+                            <!-- Victim in R1C2 -->
+                            <text x="46.6" y="20" text-anchor="middle" font-size="11" fill="#777">347</text>
+                            <g class="highlight-group">
+                                <title>Locked Pair: 3 and 7 must be in C1/C3, so remove them from C2!</title>
+                                <!-- Highlight the Pair -->
+                                <rect x="0" y="0" width="31" height="31" fill="#6c5ce7" opacity="0.1" />
+                                <rect x="62" y="0" width="31" height="31" fill="#6c5ce7" opacity="0.1" />
+
+                                <!-- Eliminate from Middle -->
+                                <line x1="38" y1="8" x2="56" y2="28" stroke="#d63031" stroke-width="2"
+                                    class="scan-line" /> <!-- X out 3/7 -->
+                                <circle cx="46.6" cy="15.5" r="14" fill="none" stroke="#d63031" stroke-width="2"
+                                    class="fade-circle" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">3 and 7 are locked in C1 & C3, eliminating them from C2</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 5: Pointing Pairs -->
+        <div id="tech-pointing-pair" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">5</div>
+                <div class="technique-title">
+                    <h2>Pointing Pair</h2>
+                    <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>When a candidate number in a box is restricted to one row or column, it can be eliminated
+                        from
+                        that row/column outside the box.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Look for a number that appears only in one row/column within a 3×3 box</li>
+                        <li>Eliminate that number from the rest of that row/column</li>
+                    </ul>
+                    <p><strong>Example:</strong> If 5 can only appear in row 1 of a box, eliminate 5 from the rest
+                        of
+                        row 1.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Box 1 candidates -->
+                            <text x="15.5" y="20" text-anchor="middle" font-size="11" fill="#0984e3">5</text>
+                            <text x="46.6" y="20" text-anchor="middle" font-size="11" fill="#0984e3">5</text>
+
+                            <!-- Fill other cells in Box 1 -->
+                            <text x="77.7" y="23" text-anchor="middle" font-size="18" fill="#333">1</text>
+                            <text x="15.5" y="54" text-anchor="middle" font-size="18" fill="#333">2</text>
+                            <text x="46.6" y="54" text-anchor="middle" font-size="18" fill="#333">3</text>
+                            <text x="77.7" y="54" text-anchor="middle" font-size="18" fill="#333">4</text>
+                            <text x="15.5" y="85" text-anchor="middle" font-size="18" fill="#333">6</text>
+                            <text x="46.6" y="85" text-anchor="middle" font-size="18" fill="#333">7</text>
+                            <text x="77.7" y="85" text-anchor="middle" font-size="18" fill="#333">8</text>
+
+                            <!-- Target in Row 1 outside box -->
+                            <text x="140.0" y="20" text-anchor="middle" font-size="11" fill="#777">5,9</text>
+
+                            <g class="scan-group">
+                                <title>Pointing Pair: 5s here eliminate 5s in the rest of the row!</title>
+                                <rect x="0" y="0" width="93.33" height="31.11" fill="#0984e3" opacity="0.1" />
+                                <line x1="93" y1="15.5" x2="280" y2="15.5" stroke="#0984e3" stroke-width="2"
+                                    stroke-dasharray="5,5" class="scan-line" />
+                                <!-- Eliminate target -->
+                                <circle cx="140" cy="15.5" r="12" fill="none" stroke="#d63031" stroke-width="2"
+                                    class="fade-circle delay-1" />
+                                <line x1="132" y1="8" x2="148" y2="24" stroke="#d63031" stroke-width="2" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">5 in Box 1 points to the right, clearing Row 1</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 6: Box/Line Reduction -->
+        <div id="tech-box-line" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">6</div>
+                <div class="technique-title">
+                    <h2>Box/Line Reduction</h2>
+                    <span class="difficulty-badge difficulty-intermediate">Intermediate</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>When a candidate in a row/column is confined to one box, eliminate it from the rest of that
+                        box.
+                    </p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find a number that only appears in one box within a row/column</li>
+                        <li>Remove that number from other cells in the box</li>
+                    </ul>
+                    <p>This is the reverse of pointing pairs.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Box Line Reduction: 8 in Row 1 is only in Box 1 -->
+                            <text x="15.5" y="20" text-anchor="middle" font-size="11" fill="#e17055">8</text>
+                            <text x="46.6" y="20" text-anchor="middle" font-size="11" fill="#e17055">8</text>
+
+                            <!-- Rest of Row 1 filled -->
+                            <text x="77.7" y="23" text-anchor="middle" font-size="18" fill="#333">1</text>
+                            <text x="108.8" y="23" text-anchor="middle" font-size="18" fill="#333">2</text>
+                            <text x="140" y="23" text-anchor="middle" font-size="18" fill="#333">3</text>
+                            <text x="171" y="23" text-anchor="middle" font-size="18" fill="#333">4</text>
+                            <text x="202.1" y="23" text-anchor="middle" font-size="18" fill="#333">5</text>
+                            <text x="233.2" y="23" text-anchor="middle" font-size="18" fill="#333">6</text>
+                            <text x="264.3" y="23" text-anchor="middle" font-size="18" fill="#333">7</text>
+
+                            <text x="15.5" y="54" text-anchor="middle" font-size="11" fill="#777">8,9</text>
+
+                            <g class="scan-group">
+                                <title>Locked Candidate: 8 in Row 1 must be in Box 1, so remove from rest of Box 1!
+                                </title>
+                                <rect x="0" y="0" width="280" height="31.11" fill="#e17055" opacity="0.1" />
+                                <line x1="15.5" y1="31" x2="15.5" y2="93" stroke="#e17055" stroke-width="2"
+                                    stroke-dasharray="5,5" class="scan-line" />
+                                <circle cx="15.5" cy="50" r="12" fill="none" stroke="#d63031" stroke-width="2"
+                                    class="fade-circle delay-1" />
+                                <line x1="8" y1="42" x2="24" y2="58" stroke="#d63031" stroke-width="2" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">8 in Row 1 is confirmed for Box 1, clearing the rest of Box 1</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 7: Naked Triples -->
+        <div id="tech-naked-triple" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">7</div>
+                <div class="technique-title">
+                    <h2>Naked Triple</h2>
+                    <span class="difficulty-badge difficulty-advanced">Advanced</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>When three cells in a unit can only contain the same three numbers, eliminate those numbers
+                        from
+                        other cells.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find three cells that collectively contain only three candidates</li>
+                        <li>Each cell can have 2 or 3 of these candidates</li>
+                        <li>Remove these three numbers from all other cells in the unit</li>
+                    </ul>
+                    <p><strong>Example:</strong> Cells with {1,2}, {1,3}, {2,3} form a triple. Remove 1, 2, and 3
+                        from
+                        other cells.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Naked Triple in Row 1 -->
+                            <text x="15.5" y="20" text-anchor="middle" font-size="11" fill="#d63031">12</text>
+                            <text x="46.6" y="20" text-anchor="middle" font-size="11" fill="#d63031">13</text>
+                            <text x="77.7" y="20" text-anchor="middle" font-size="11" fill="#d63031">23</text>
+
+                            <!-- Victim -->
+                            <text x="108.8" y="20" text-anchor="middle" font-size="11" fill="#777">125</text>
+                            <text x="140" y="23" text-anchor="middle" font-size="18" fill="#333">6</text>
+
+                            <g class="highlight-group">
+                                <title>Triple Lock: 1,2,3 are locked in the first 3 cells!</title>
+                                <rect x="0" y="0" width="31" height="31" fill="#fab1a0" opacity="0.2" />
+                                <rect x="31" y="0" width="31" height="31" fill="#fab1a0" opacity="0.2" />
+                                <rect x="62" y="0" width="31" height="31" fill="#fab1a0" opacity="0.2" />
+                                <line x1="100" y1="8" x2="118" y2="28" stroke="#d63031" stroke-width="2"
+                                    class="scan-line" />
+                                <circle cx="108.8" cy="15.5" r="14" fill="none" stroke="#d63031" stroke-width="2"
+                                    class="fade-circle" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">1, 2, 3 are locked in the first three cells</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 8: X-Wing -->
+        <div id="tech-x-wing" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">8</div>
+                <div class="technique-title">
+                    <h2>X-Wing</h2>
+                    <span class="difficulty-badge difficulty-advanced">Advanced</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>A pattern where a candidate appears in exactly two positions in two different rows (or
+                        columns),
+                        forming a rectangle.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find a number that appears in only 2 cells in each of 2 rows</li>
+                        <li>If these 4 cells form a rectangle, eliminate that number from the columns they occupy
+                        </li>
+                        <li>Also works with columns/rows reversed</li>
+                    </ul>
+                    <p><strong>Example:</strong> If 7 appears at (R1C2, R1C8) and (R5C2, R5C8), eliminate 7 from
+                        columns
+                        2 and 8.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- X-Wing on 7 -->
+                            <text x="46.6" y="23" text-anchor="middle" font-size="18" fill="#0984e3">7</text>
+                            <text x="140" y="23" text-anchor="middle" font-size="18" fill="#0984e3">7</text>
+                            <text x="46.6" y="116" text-anchor="middle" font-size="18" fill="#0984e3">7</text>
+                            <text x="140" y="116" text-anchor="middle" font-size="18" fill="#0984e3">7</text>
+
+                            <g class="x-wing-group">
+                                <title>X-Wing: Eliminate 7s from columns 2 & 5 (except the corners)</title>
+                                <line x1="46.6" y1="23" x2="140" y2="23" stroke="#0984e3" stroke-width="2"
+                                    stroke-dasharray="5,5" class="scan-line" />
+                                <line x1="46.6" y1="116" x2="140" y2="116" stroke="#0984e3" stroke-width="2"
+                                    stroke-dasharray="5,5" class="scan-line" />
+                                <line x1="46.6" y1="0" x2="46.6" y2="280" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="2,2" opacity="0.3" />
+                                <line x1="140" y1="0" x2="140" y2="280" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="2,2" opacity="0.3" />
+                                <circle cx="46.6" cy="23" r="14" fill="#0984e3" opacity="0.2" class="pulse-circle" />
+                                <circle cx="140" cy="23" r="14" fill="#0984e3" opacity="0.2" class="pulse-circle" />
+                                <circle cx="46.6" cy="116" r="14" fill="#0984e3" opacity="0.2"
+                                    class="pulse-circle delay-1" />
+                                <circle cx="140" cy="116" r="14" fill="#0984e3" opacity="0.2"
+                                    class="pulse-circle delay-1" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">X-Wing forms a rectangle, clearing columns</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 9: Swordfish -->
+        <div id="tech-swordfish" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">9</div>
+                <div class="technique-title">
+                    <h2>Swordfish</h2>
+                    <span class="difficulty-badge difficulty-expert">Expert</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>An extension of X-Wing using three rows and three columns instead of two.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find a candidate that appears 2-3 times in each of 3 rows</li>
+                        <li>If all occurrences align to only 3 columns, eliminate from those columns</li>
+                        <li>Requires careful pattern recognition</li>
+                    </ul>
+                    <p>This is a rare but powerful technique for expert-level puzzles.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Swordfish on 4 -->
+                            <circle cx="15.5" cy="23" r="8" fill="#a29bfe" class="pulse-circle" />
+                            <circle cx="108.8" cy="23" r="8" fill="#a29bfe" class="pulse-circle" />
+                            <circle cx="108.8" cy="116" r="8" fill="#a29bfe" class="pulse-circle delay-1" />
+                            <circle cx="202.1" cy="116" r="8" fill="#a29bfe" class="pulse-circle delay-1" />
+                            <circle cx="15.5" cy="209" r="8" fill="#a29bfe" class="pulse-circle delay-2" />
+                            <circle cx="202.1" cy="209" r="8" fill="#a29bfe" class="pulse-circle delay-2" />
+
+                            <g class="swordfish-group">
+                                <title>Swordfish detected! Clear columns 1, 4, 7</title>
+                                <line x1="15.5" y1="0" x2="15.5" y2="280" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="4,4" opacity="0.4" />
+                                <line x1="108.8" y1="0" x2="108.8" y2="280" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="4,4" opacity="0.4" />
+                                <line x1="202.1" y1="0" x2="202.1" y2="280" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="4,4" opacity="0.4" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">Candidates align in 3 rows and 3 columns</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technique 10: XY-Wing -->
+        <div id="tech-xy-wing" class="technique-section" style="display: none;">
+            <div class="technique-header">
+                <div class="technique-number">10</div>
+                <div class="technique-title">
+                    <h2>XY-Wing</h2>
+                    <span class="difficulty-badge difficulty-expert">Expert</span>
+                </div>
+            </div>
+            <div class="technique-content">
+                <div class="technique-description">
+                    <p>A chain of three cells with specific candidate patterns that allows elimination.</p>
+                    <p><strong>How it works:</strong></p>
+                    <ul>
+                        <li>Find a "pivot" cell with candidates {X,Y}</li>
+                        <li>Find two "wing" cells: one with {X,Z} and one with {Y,Z}</li>
+                        <li>The wings must see the pivot but not each other</li>
+                        <li>Eliminate Z from any cell that sees both wings</li>
+                    </ul>
+                    <p><strong>Example:</strong> Pivot {3,7}, Wing1 {3,9}, Wing2 {7,9} → eliminate 9 from cells
+                        seeing both wings.</p>
+                </div>
+                <div class="technique-example">
+                    <div class="example-grid">
+                        <svg width="280" height="280" viewBox="0 0 280 280" class="interactive-svg">
+                            <rect width="280" height="280" fill="url(#grid)" />
+                            <path
+                                d="M0,0 L280,0 L280,280 L0,280 Z M93.33,0 L93.33,280 M186.66,0 L186.66,280 M0,93.33 L280,93.33 M0,186.66 L280,186.66"
+                                stroke="#000" stroke-width="3" fill="none" />
+
+                            <!-- Pivot -->
+                            <circle cx="140" cy="140" r="16" fill="none" stroke="#fd79a8" stroke-width="3"
+                                class="pulse-circle" />
+                            <text x="140" y="144" text-anchor="middle" font-size="11" fill="#fd79a8">37</text>
+
+                            <!-- Wings -->
+                            <circle cx="140" cy="23" r="16" fill="none" stroke="#fdcb6e" stroke-width="2"
+                                class="fade-circle delay-1" />
+                            <text x="140" y="27" text-anchor="middle" font-size="11" fill="#fdcb6e">39</text>
+
+                            <circle cx="233.2" cy="140" r="16" fill="none" stroke="#fdcb6e" stroke-width="2"
+                                class="fade-circle delay-1" />
+                            <text x="233.2" y="144" text-anchor="middle" font-size="11" fill="#fdcb6e">79</text>
+
+                            <!-- Connections -->
+                            <line x1="140" y1="124" x2="140" y2="39" stroke="#fd79a8" stroke-width="2"
+                                stroke-dasharray="3,3" />
+                            <line x1="156" y1="140" x2="217" y2="140" stroke="#fd79a8" stroke-width="2"
+                                stroke-dasharray="3,3" />
+
+                            <!-- Victim -->
+                            <text x="233.2" y="27" text-anchor="middle" font-size="11" fill="#777">129</text>
+                            <g>
+                                <title>XY-Wing eliminates 9 from R1C8!</title>
+                                <line x1="156" y1="23" x2="217" y2="23" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="2,2" opacity="0.5" />
+                                <line x1="233.2" y1="124" x2="233.2" y2="39" stroke="#d63031" stroke-width="1"
+                                    stroke-dasharray="2,2" opacity="0.5" />
+                                <circle cx="233.2" cy="23" r="12" fill="none" stroke="#d63031" stroke-width="2"
+                                    class="fade-circle" />
+                            </g>
+                        </svg>
+                    </div>
+                    <p class="example-caption">XY-Wing: pivot R5C5 connects wings, eliminating 9 at R1C8</p>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 3rem 0;">
+            <a href="/" class="btn">Try the Solver</a>
+        </div>
+    </div>
+    </div>
+
+    <script>
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        function toggleTechnique(id) {
+            try {
+                // Hide all technique sections
+                document.querySelectorAll('.technique-section').forEach(el => {
+                    el.style.display = 'none';
+                });
+
+                // Show selected technique
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'block';
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                    // Trigger animation replay
+                    const svg = element.querySelector('svg');
+                    if (svg) {
+                        svg.classList.remove('animate');
+                        void svg.offsetWidth;
+                        svg.classList.add('animate');
+                    }
+                } else {
+                    console.error('Technique section not found:', id);
+                }
+
+                // Highlight Active Card
+                document.querySelectorAll('.technique-card').forEach(card => {
+                    card.classList.remove('active');
+                    const onClickVal = card.getAttribute('onclick');
+                    if (onClickVal && onClickVal.includes(`'${id}'`)) {
+                        card.classList.add('active');
+                    }
+                });
+            } catch (e) {
+                console.error('Error in toggleTechnique:', e);
+            }
+        }
+    </script>
+
+    <footer class="footer">
+        <p>Made by <a href="https://github.com/bluekap" target="_blank" class="footer-link">bluekap</a></p>
+    </footer>
+</body>
+
+</html>
