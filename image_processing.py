@@ -1,12 +1,33 @@
 import cv2
 import numpy as np
-import pytesseract
-from PIL import Image
-import os
-import concurrent.futures
+import sys
 
-# You might need to set the tesseract path if it's not in your PATH
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  # Windows
+# Monkey patch zoneinfo for Python < 3.9
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+    sys.modules['zoneinfo'] = zoneinfo
+
+import sys
+
+# Monkey patch zoneinfo for Python < 3.9
+try:
+    import zoneinfo
+except ImportError:
+    from backports import zoneinfo
+    sys.modules['zoneinfo'] = zoneinfo
+
+from paddleocr import PaddleOCR
+import logging
+
+# Initialize PaddleOCR globally
+# use_angle_cls=False for faster performance since cells are already upright
+# lang='en' for digits/english
+ocr = PaddleOCR(use_angle_cls=False, lang='en', show_log=False)
+
+# Suppress PaddleOCR logging
+logging.getLogger('ppocr').setLevel(logging.ERROR)
 
 
 # pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'  # Linux/Mac
@@ -157,9 +178,8 @@ def extract_cells(warped_image):
             x1 = j * cell_width
             x2 = (j + 1) * cell_width
 
-            # Reduced padding to capture more context around digits
-            # This allows slight overlap with neighboring cells for better OCR
-            padding = 2  # Reduced from 6 to get more digit context
+            # Increase padding to avoid capturing grid lines which cause false detections
+            padding = 5  # Increased from 2 to avoid grid line artifacts
             cell = warped_image[y1 + padding:y2 - padding, x1 + padding:x2 - padding]
             row_cells.append(cell)
 
@@ -173,8 +193,7 @@ def preprocess_cell_for_ocr(cell):
     if cell.size == 0:
         return cell
 
-    # Use a larger target size for better Tesseract recognition
-    # 100x100 provides good quality without being too large
+    # Use a larger target size for better recognition
     target_size = 100
     
     # Resize with INTER_CUBIC for better quality
@@ -187,12 +206,12 @@ def preprocess_cell_for_ocr(cell):
     # THRESH_BINARY_INV: white text on black background
     _, cell = cv2.threshold(cell, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Clear borders to remove grid line artifacts
-    border = 6
+    # Clear borders more effectively to remove grid line artifacts
+    border = 10
     cell[0:border, :] = 0
-    cell[border:target_size, :] = cell[border:target_size, :]
+    cell[target_size-border:target_size, :] = 0
     cell[:, 0:border] = 0
-    cell[:, border:target_size] = cell[:, border:target_size]
+    cell[:, target_size-border:target_size] = 0
     
     # Find contours to identify the digit
     contours, _ = cv2.findContours(cell.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -282,130 +301,85 @@ def preprocess_cell_for_ocr(cell):
 
 
 def extract_digit_from_cell(cell, row_idx=None, col_idx=None):
-    """Extract digit from a single cell using Tesseract OCR with intelligent retry logic"""
+    """Extract digit from a single cell using PaddleOCR with optimized settings"""
     
     # First check if the RAW cell has meaningful content by counting black pixels
-    # Apply a simple threshold to the raw cell to detect digit presence
     if cell.size == 0:
         return 0
     
-    # Check raw cell for content (before heavy preprocessing)
-    _, raw_thresh = cv2.threshold(cell, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    raw_black_pixels = np.sum(raw_thresh > 128)
+    # Fast empty cell check - avoid expensive preprocessing if clearly empty
+    # Simple threshold on raw cell
+    _, quick_thresh = cv2.threshold(cell, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    quick_black = np.sum(quick_thresh > 128)
     
-    # If very few black pixels in raw cell, it's likely empty
-    # Lowered threshold to catch thin "1" digits
-    # Adjusted to 200 to filter out noise at (2,7) which has 165 pixels
-    # REVERT: 500 was too high for sample_image_3.png. 250 still missed a very thin '1'.
-    # Setting to 150 to be extremely safe.
-    if raw_black_pixels < 150:
+    # If very few black pixels, skip all processing immediately
+    if quick_black < 30:  # Very low threshold for speed
         return 0
     
-    # Define different preprocessing strategies with varying border margins
-    # Each strategy extracts different amounts of the cell to handle grid lines
-    # Reduced list to improve performance: removed redundant ultra_simple variants (line/block)
-    strategies =  [
-        {'border_reduction': 6, 'psm': 10, 'name': 'standard', 'use_simple': False},   # Default: remove more border
-        {'border_reduction': 3, 'psm': 7, 'name': 'expanded', 'use_simple': False},     # Keep more context
-        {'border_reduction': 1, 'psm': 8, 'name': 'minimal', 'use_simple': False},      # Minimal border removal
-        {'border_reduction': 0, 'psm': 10, 'name': 'ultra_simple', 'use_simple': True}, # No filtering for thin digits
-        {'border_reduction': 0, 'psm': 7, 'name': 'ultra_simple_line', 'use_simple': True}, # Single line mode
-        {'border_reduction': 0, 'psm': 6, 'name': 'ultra_simple_block', 'use_simple': True}, # Block mode
-    ]
-    
-    # Cache for the simple preprocessing result since it's shared across multiple strategies
-    simple_processed_cell_cache = None
+    # Only do detailed check if we passed the quick test
+    if quick_black < 100:  # Borderline cases
+        blurred = cv2.GaussianBlur(cell, (3, 3), 0)
+        _, raw_thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+        kernel = np.ones((2, 2), np.uint8)
+        raw_thresh = cv2.morphologyEx(raw_thresh, cv2.MORPH_OPEN, kernel)
+        raw_black_pixels = np.sum(raw_thresh > 128)
+        
+        if raw_black_pixels < 50:
+            return 0
 
-    for attempt, strategy in enumerate(strategies, 1):
-        try:
-            # For ultra_simple strategy, use basic preprocessing without contour filtering
-            if strategy.get('use_simple', False):
-                if simple_processed_cell_cache is None:
-                    # Simple preprocessing for thin digits like "1"
-                    target_size = 100
-                    processed_cell = cv2.resize(cell, (target_size, target_size), interpolation=cv2.INTER_CUBIC)
-                    processed_cell = cv2.GaussianBlur(processed_cell, (3, 3), 0)
-                    _, processed_cell = cv2.threshold(processed_cell, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-                    
-                    # Clear just the edges (very minimal for thin digits)
-                    border = 5
-                    processed_cell[0:border, :] = 0
-                    processed_cell[-border:, :] = 0
-                    processed_cell[:, 0:border] = 0
-                    processed_cell[:, -border:] = 0
-                    
-                    # Invert to black on white for OCR
-                    processed_cell = cv2.bitwise_not(processed_cell)
-                    simple_processed_cell_cache = processed_cell
-                
-                processed_cell = simple_processed_cell_cache
+    # Preprocess the cell
+    processed_cell = preprocess_cell_for_ocr(cell)
+    
+    # Ensure we have a valid image for Paddle
+    if processed_cell is None or processed_cell.size == 0:
+        return 0
+
+    try:
+        # PaddleOCR expects black text on white background (or vice versa, it's robust), 
+        # but our processed_cell is white text on black background (inverted).
+        # We should probably invert it back to standard "black text on white paper" for best OCR results.
+        ocr_input = cv2.bitwise_not(processed_cell)
+        
+        # Optimize: det=False skips the detection model (DB/EAST) and only runs recognition (CRNN)
+        # result format with det=False is [('text', conf), ...]
+        result = ocr.ocr(ocr_input, cls=False, det=False)
+        
+        if not result or result[0] is None:
+            return 0
+            
+        # With det=False, result[0] is often [[text, conf]] or [text, conf]
+        res = result[0]
+        text = ""
+        confidence = 0.0
+        
+        if isinstance(res, (list, tuple)) and len(res) > 0:
+            if isinstance(res[0], (list, tuple)):
+                text = str(res[0][0])
+                confidence = float(res[0][1])
             else:
-                # Standard preprocessing with contour filtering
-                processed_cell = preprocess_cell_for_ocr_with_margin(cell, strategy['border_reduction'])
-            
-            # Check if preprocessing left meaningful content
-            # Lower threshold for ultra_simple to catch thin "1"s
-            min_pixels = 20 if strategy.get('use_simple', False) else 40
-            num_black_pixels = np.sum(processed_cell < 128)
-            if num_black_pixels < min_pixels:
-                continue  # Skip this strategy if preprocessing removed too much
-            
-            # Additional validation for ultra_simple: Check if meaningful shapes exist
-            # This filters out small noise specs that pass the pixel count but aren't digits
-            if strategy.get('use_simple', False):
-                 # Invert back to find contours (white on black)
-                 inverted_for_contours = cv2.bitwise_not(processed_cell)
-                 contours, _ = cv2.findContours(inverted_for_contours, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                 
-                 if not contours:
-                     continue
-                 
-                 # Get max height of any contour
-                 max_h = 0
-                 for c in contours:
-                     _, _, _, h = cv2.boundingRect(c)
-                     max_h = max(max_h, h)
-                 
-                 # If largest blob is too short (less than 20% of cell), it's noise
-                 # Digits are usually at least 50% height
-                 if max_h < 20:
-                     continue
+                text = str(res[0])
+                if len(res) > 1:
+                    confidence = float(res[1])
+        
+        # Filter for digits only
+        digits = "".join([c for c in text if c.isdigit()])
+        
+        # Only accept if we have digits and confidence is reasonably high
+        # False detections of '1' usually have lower confidence or come from noise
+        if digits and confidence > 0.35:  # Lowered from 0.4 for speed
+            # If it detected multiple digits, it's likely noise or a misread
+            if len(digits) > 1:
+                # If they are all the same digit, it might be okay (e.g. "11" for "1")
+                if all(d == digits[0] for d in digits):
+                    return int(digits[0])
+                return 0
+            return int(digits[0])
+                
+        return 0
 
-            # Try OCR with this strategy's PSM mode
-            config = f'--oem 3 --psm {strategy["psm"]} -c tessedit_char_whitelist=123456789'
-            text = pytesseract.image_to_string(processed_cell, config=config).strip()
-            
-            # Validate the result
-            if text:
-                text = ''.join(filter(str.isdigit, text))
-                if text and 1 <= int(text) <= 9:
-                    digit = int(text[0])
-                    
-                    # Validate based on pixel density to filter noise
-                    # "1" can be very thin, but other digits usually have more pixels
-                    min_pixels = 150 if digit == 1 else 200
-                    
-                    if raw_black_pixels < min_pixels:
-                        # If we think it's a digit but it has too few pixels, it's likely noise or a ghost
-                        # We continue to try other strategies, or if all fail, it will return 0
-                        continue
-
-                    if attempt > 1:
-                        print(f"Cell ({row_idx},{col_idx}) | Raw: {raw_black_pixels:4d} | OCR: '{digit}' (attempt {attempt}, {strategy['name']}, PSM {strategy['psm']})")
-                    else:
-                        print(f"Cell ({row_idx},{col_idx}) | Raw: {raw_black_pixels:4d} | OCR: '{digit}'")
-                    return digit
-            
-        except Exception as e:
-            if attempt == len(strategies):  # Only print error on last attempt
-                print(f"OCR Error at ({row_idx},{col_idx}): {e}")
-            continue
-    
-    # If all attempts failed but we have significant raw content, log it
-    if raw_black_pixels > 300:  # Significant content in raw cell
-        print(f"Cell ({row_idx},{col_idx}) | Raw: {raw_black_pixels:4d} | OCR: '' (failed all {len(strategies)} strategies)")
-    
-    return 0
+    except Exception as e:
+        print(f"OCR Error at ({row_idx},{col_idx}): {e}")
+        return 0
 
 
 def preprocess_cell_for_ocr_with_margin(cell, border_reduction=6):
@@ -530,28 +504,17 @@ def extract_sudoku_from_image(image_path):
         print("✓ Cells extracted")
 
         # Step 5: Extract digits from each cell
-        # Step 5: Extract digits from each cell in parallel
+        print("Starting digit extraction with PaddleOCR...")
+        # Step 5: Extract digits from each cell sequentially
         sudoku_board = [[0] * 9 for _ in range(9)]
         
-        def process_cell(args):
-            r, c, cell_img = args
-            return r, c, extract_digit_from_cell(cell_img, r, c)
-
-        # Prepare tasks
-        tasks = []
         for i in range(9):
             for j in range(9):
-                tasks.append((i, j, cells[i][j]))
-        
-        # Execute in parallel
-        print("Starting parallel digit extraction...")
-        # Optimal max_workers usually roughly corresponds to CPU cores.
-        # Too many might cause thrashing or high memory usage. 4-8 is usually safe.
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            results = executor.map(process_cell, tasks)
-            
-            for r, c, digit in results:
-                sudoku_board[r][c] = digit
+                # print(f"Processing cell {i},{j}...")
+                digit = extract_digit_from_cell(cells[i][j], i, j)
+                if digit != 0:
+                    sudoku_board[i][j] = digit
+                    print(f"Cell ({i},{j}) -> {digit}")
 
         print("✓ Digits extracted")
 

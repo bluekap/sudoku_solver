@@ -132,6 +132,7 @@ h1 {
     margin-bottom: 1rem;
     background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.2));
 }
@@ -197,6 +198,52 @@ h1 {
     }
 }
 
+.progress-container {
+    width: 100%;
+    max-width: 400px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1rem auto;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    border-radius: 10px;
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(106, 90, 205, 0.6);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
 .results {
     display: none;
     margin-top: 2rem;
@@ -241,61 +288,147 @@ h1 {
 .sudoku-grid {
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    gap: 2px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 4px solid #000;
-    border-radius: 8px;
-    padding: 4px;
-    max-width: 320px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    background: transparent;
+    border: 2px solid #1a1c2c;
+    /* Theme dark border */
+    border-radius: 4px;
+    padding: 0;
+    gap: 0;
+    /* Remove gap, use borders */
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     margin: 0 auto;
+    overflow: hidden;
 }
 
-.sudoku-section:last-child .sudoku-grid {
-    border-color: var(--success-color);
-}
-
+/* Grid Cell Styling */
 .sudoku-cell {
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
     aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 1.3em;
-    color: #333;
-    font-family: var(--font-heading);
+    position: relative;
+    border: none;
+    /* Reset all borders first */
+    border-right: 1px solid #d1d5db;
+    border-bottom: 1px solid #d1d5db;
 }
 
-/* Thick borders for 3x3 subgrids */
-.sudoku-cell:nth-child(3n) {
-    margin-right: 2px;
-}
-
+/* Remove right border for the last column (handled by container) */
 .sudoku-cell:nth-child(9n) {
-    margin-right: 0;
+    border-right: none;
 }
 
+/* Remove bottom border for the last row (handled by container) */
+.sudoku-cell:nth-child(n+73) {
+    border-bottom: none;
+}
+
+/* 3x3 Subgrid Vertical Borders (Columns 3 and 6) */
+.sudoku-cell:nth-child(3n) {
+    border-right: 2px solid #1a1c2c;
+}
+
+/* Reset right border for last column again to be sure specificy is handled */
+.sudoku-cell:nth-child(9n) {
+    border-right: none;
+}
+
+/* 3x3 Subgrid Horizontal Borders (Rows 3 and 6) */
+/* Row 3 (19-27) & Row 6 (46-54) need thick bottom border */
 .sudoku-cell:nth-child(n+19):nth-child(-n+27),
 .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-    margin-bottom: 2px;
+    border-bottom: 2px solid #1a1c2c;
 }
 
 .sudoku-cell.given {
-    background: #eef2ff;
-    color: #1a1c2c;
+    background: #f0f4ff;
+    color: #1e40af;
+}
+
+.sudoku-cell.given input {
+    font-weight: 700;
 }
 
 .sudoku-cell.solved {
-    background: #e6fffa;
-    color: #00b894;
+    background: #d1fae5;
+    color: #047857;
     animation: fadeIn 0.5s ease backwards;
+}
+
+/* Interaction States */
+.sudoku-cell:hover {
+    background: #fff;
+}
+
+.sudoku-cell:focus-within {
+    background: #fff;
+    z-index: 10;
+    /* Bring on top */
+}
+
+.sudoku-cell.user-modified {
+    background: #fff;
+    color: #1a1c2c;
+}
+
+/* Input styling */
+.sudoku-cell input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: 500;
+    color: inherit;
+    outline: none;
+    padding: 0;
+    font-family: var(--font-heading);
+    cursor: text;
+}
+
+.sudoku-cell input[readonly] {
+    cursor: default;
+    user-select: none;
+}
+
+.sudoku-cell input::-webkit-outer-spin-button,
+.sudoku-cell input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.sudoku-cell input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.placeholder-grid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 400px;
+    height: 400px;
+    max-width: 100%;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    aspect-ratio: 1;
+}
+
+.placeholder-grid p {
+    padding: 2rem;
+    text-align: center;
 }
 
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: scale(0.8);
+        transform: scale(0.95);
     }
 
     to {
@@ -303,6 +436,7 @@ h1 {
         transform: scale(1);
     }
 }
+
 
 .original-image {
     max-width: 280px;

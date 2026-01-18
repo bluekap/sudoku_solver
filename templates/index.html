@@ -34,9 +34,15 @@
             <input type="file" id="file-input" accept="image/*" />
         </div>
 
+
         <div class="loading">
             <div class="spinner"></div>
-            <p>Processing your Sudoku image...</p>
+            <p id="loading-text">Processing your Sudoku image...</p>
+            <div class="progress-container" id="progress-container" style="display: none;">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <p id="progress-text"
+                style="display: none; margin-top: 1rem; font-size: 0.9rem; color: rgba(255,255,255,0.7);"></p>
         </div>
 
         <div id="error-message"></div>
@@ -57,6 +63,10 @@
                 <div class="sudoku-section">
                     <h3>🔍 Detected Puzzle</h3>
                     <div id="original-sudoku" class="sudoku-grid"></div>
+                    <div id="edit-controls" class="edit-controls"
+                        style="display: none; margin-top: 1rem; text-align: center;">
+                        <button class="btn" id="solve-btn" onclick="solvePuzzle()">✅ Solve Puzzle</button>
+                    </div>
                 </div>
 
                 <div class="sudoku-section">
@@ -82,6 +92,8 @@
         const results = document.getElementById('results');
         const errorDiv = document.getElementById('error-message');
         const successDiv = document.getElementById('success-message');
+
+        let currentBoard = null;
 
         // Drag and drop functionality
         uploadArea.addEventListener('dragover', (e) => {
@@ -137,15 +149,43 @@
 
             // Clear previous grids
             document.getElementById('original-sudoku').innerHTML = '';
-            document.getElementById('solved-sudoku').innerHTML = '<div class="spinner" style="width: 30px; height: 30px; margin-top: 50px;"></div><p style="text-align:center; margin-top:10px;">Solving...</p>';
+            document.getElementById('solved-sudoku').innerHTML = `
+                <div class="placeholder-grid">
+                    <p>Solved puzzle will appear here</p>
+                </div>
+            `;
 
             try {
                 // Step 1: Extract
                 addProcessingStep("Uploading and analyzing image...");
+
+                // Show progress bar and start gradual fill
+                document.getElementById('loading-text').textContent = 'Processing your Sudoku...';
+                showProgress(0, 'Analyzing image...');
+
+                // Start progressive fill while backend processes
+                let progressValue = 0;
+                const progressInterval = setInterval(() => {
+                    progressValue += 2;
+                    if (progressValue <= 30) {
+                        updateProgress(progressValue, 'Detecting grid...');
+                    } else if (progressValue <= 80) {
+                        updateProgress(progressValue, 'Reading digits with OCR...');
+                    } else if (progressValue < 95) {
+                        updateProgress(progressValue, 'Almost done...');
+                    }
+                }, 100); // Update every 100ms
+
                 const extractResponse = await fetch('/extract', {
                     method: 'POST',
                     body: formData
                 });
+
+                // Stop the progressive fill and complete
+                clearInterval(progressInterval);
+                updateProgress(100, 'Complete!');
+                await new Promise(resolve => setTimeout(resolve, 300)); // Brief pause to show completion
+
                 const extractData = await extractResponse.json();
 
                 if (!extractData.success) {
@@ -153,33 +193,51 @@
                 }
 
                 addProcessingStep("Sudoku grid detected!");
+                addProcessingStep("Ready to edit or solve!");
 
-                // Show extracted data immediately
+                // Store the board data
+                currentBoard = extractData.original_board;
+
+                // Show extracted data and edit controls
                 displayExtracted(extractData);
                 loading.style.display = 'none';
                 results.style.display = 'block';
-
-                // Step 2: Solve
-                addProcessingStep("Solving puzzle...");
-                const solveResponse = await fetch('/solve', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ board: extractData.original_board })
-                });
-                const solveData = await solveResponse.json();
-
-                if (!solveData.success) {
-                    throw new Error(solveData.error || 'Solving failed');
-                }
-
-                addProcessingStep("Puzzle solved successfully!");
-                displaySolved(solveData.solved_board, extractData.original_board);
+                document.getElementById('edit-controls').style.display = 'block';
 
             } catch (error) {
+                // Stop progress bar if it's running
+                if (typeof progressInterval !== 'undefined') {
+                    clearInterval(progressInterval);
+                }
+
                 loading.style.display = 'none';
                 showError(error.message);
                 console.error('Error:', error);
             }
+        }
+
+        function showProgress(percent, text) {
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            progressContainer.style.display = 'block';
+            progressText.style.display = 'block';
+            progressBar.style.width = percent + '%';
+            progressText.textContent = text;
+        }
+
+        function updateProgress(percent, text) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            progressBar.style.width = percent + '%';
+            if (text) progressText.textContent = text;
+        }
+
+        function hideProgress() {
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('progress-text').style.display = 'none';
         }
 
         function addProcessingStep(text) {
@@ -191,7 +249,7 @@
 
         function displayExtracted(data) {
             document.getElementById('original-image').src = data.original_image;
-            displaySudokuGrid('original-sudoku', data.original_board);
+            displaySudokuGrid('original-sudoku', data.original_board, false);
         }
 
         function displaySolved(solvedBoard, originalBoard) {
@@ -207,18 +265,35 @@
             const container = document.getElementById(containerId);
             container.innerHTML = '';
 
+            const isEditable = containerId === 'original-sudoku';
+
             for (let i = 0; i < 9; i++) {
                 for (let j = 0; j < 9; j++) {
                     const cell = document.createElement('div');
                     cell.className = 'sudoku-cell';
-                    cell.textContent = board[i][j] || '';
 
-                    // Style cells based on whether they were given or solved
+                    // Create input element
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.inputMode = 'numeric';
+                    input.maxLength = 1;
+                    input.dataset.row = i;
+                    input.dataset.col = j;
+
+                    const value = board[i][j];
+                    const isGiven = value !== 0;
+
+                    if (value !== 0) {
+                        input.value = value;
+                    }
+
+                    // Styling classes
                     if (containerId === 'original-sudoku') {
-                        if (board[i][j] !== 0) {
+                        if (isGiven) {
                             cell.classList.add('given');
                         }
                     } else if (containerId === 'solved-sudoku' && referenceBoard) {
+                        input.readOnly = true; // Solved grid is always readonly
                         if (referenceBoard[i][j] === 0 && board[i][j] !== 0) {
                             cell.classList.add('solved');
                         } else if (board[i][j] !== 0) {
@@ -226,6 +301,15 @@
                         }
                     }
 
+                    // Event listeners for editable grid
+                    if (isEditable) {
+                        input.addEventListener('input', (e) => handleInput(e, i, j));
+                        input.addEventListener('focus', (e) => e.target.select());
+                    } else {
+                        input.readOnly = true;
+                    }
+
+                    cell.appendChild(input);
                     container.appendChild(cell);
                 }
             }
@@ -246,10 +330,87 @@
             successDiv.innerHTML = '';
         }
 
+        function handleInput(e, row, col) {
+            const input = e.target;
+            const value = input.value;
+
+            // Validate: 1-9 only
+            if (value && !/^[1-9]$/.test(value)) {
+                input.value = '';
+                if (currentBoard) currentBoard[row][col] = 0;
+                return;
+            }
+
+            // Update board data
+            if (currentBoard) {
+                currentBoard[row][col] = value ? parseInt(value) : 0;
+            }
+
+            // Visual feedback
+            const cell = input.closest('.sudoku-cell');
+            if (value) {
+                // If it's a correction, maybe change color?
+                // For now, simpler is cleaner. Just ensure it's readable.
+                cell.classList.add('user-modified');
+                // If it was originally given, but changed, it's still "given" style technically 
+                // unless we strip that class. Let's strip 'given' if user edits it?
+                // or just keep 'user-modified' as a stronger style.
+                cell.classList.remove('given');
+            } else {
+                cell.classList.remove('user-modified');
+            }
+        }
+
+        // makeGridEditable and handleCellClick are no longer needed 
+        // as functionality is built into displaySudokuGrid
+
+        async function solvePuzzle() {
+            try {
+                addProcessingStep("Solving puzzle with current grid...");
+                document.getElementById('solved-sudoku').innerHTML = '<div class="spinner" style="width: 30px; height: 30px; margin-top: 50px;"></div><p style="text-align:center; margin-top:10px;">Solving...</p>';
+
+                const solveResponse = await fetch('/solve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ board: currentBoard })
+                });
+                const solveData = await solveResponse.json();
+
+                if (!solveData.success) {
+                    // Display error in the solved grid area
+                    document.getElementById('solved-sudoku').innerHTML = `
+                        <div class="placeholder-grid" style="flex-direction: column; color: var(--error-color); border-color: var(--error-color);">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">❌</div>
+                            <p style="padding: 0 2rem;">${solveData.error || 'Solving failed'}</p>
+                            <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">Check the detected grid for errors</p>
+                        </div>
+                    `;
+                    throw new Error(solveData.error || 'Solving failed');
+                }
+
+                addProcessingStep("Puzzle solved successfully!");
+                displaySolved(solveData.solved_board, currentBoard);
+
+                // Keep solve button visible but maybe update text
+                // if (isEditMode) { toggleEditMode(); } - Removed logic
+            } catch (error) {
+                // If the error was already displayed in the grid, don't show the global banner
+                if (document.getElementById('solved-sudoku').querySelector('.placeholder-grid')) {
+                    // Do nothing, error is already visible
+                } else {
+                    showError(error.message);
+                }
+                console.error('Error:', error);
+            }
+        }
+
         function resetApp() {
             results.style.display = 'none';
             hideMessages();
+            hideProgress();
             fileInput.value = '';
+            currentBoard = null;
+            document.getElementById('edit-controls').style.display = 'none';
         }
     </script>
 </body>
